@@ -10,6 +10,8 @@ const port = process.env.PORT || 3000;
 
 const UserRoute = require('./routes/userRoute');
 const AdminRoute = require('./routes/recordRoute');
+const dashboardRoutes = require('./routes/dashboardRoute');
+
 
 
 app.use(cors({
@@ -28,6 +30,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/', UserRoute);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api', AdminRoute);
+app.use('/api', dashboardRoutes);
+
 
 // app.use('/admin-route', AdminRoute);
 
