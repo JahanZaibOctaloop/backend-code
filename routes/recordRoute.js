@@ -6,9 +6,6 @@ const { upload } = require('../middleware/multerConfig'); // Import multer confi
 router.post('/add-record', upload.fields([{ name: 'picture' }, { name: 'salarySlip' }]), recordController.addRecord);
 router.get('/all-records', recordController.getAllRecords);
 router.delete('/delete-record/:id', recordController.deleteRecord);
-router.put('/edit-record/:id', recordController.editRecord);
-
-
-
+router.put('/edit-record/:id', upload.fields([{ name: 'picture' }, { name: 'salarySlip' }]), recordController.editRecord); // Added upload middleware
 
 module.exports = router;

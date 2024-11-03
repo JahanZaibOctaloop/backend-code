@@ -1,6 +1,5 @@
+const cloudinary = require('../middleware/cloudinaryConfig');
 const Record = require('../models/record'); // Ensure the path is correct
-const path = require('path');
-const fs = require('fs');
 
 exports.addRecord = async (req, res) => {
   try {
@@ -22,20 +21,33 @@ exports.addRecord = async (req, res) => {
       reference,
     } = req.body;
 
-    // Initialize filenames as null in case no file is uploaded
-    let salarySlipFilename = null;
-    let pictureFilename = null;
+    // Helper function to upload to Cloudinary
+    const uploadToCloudinary = (fileBuffer, folder) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: folder },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result.secure_url);
+          }
+        );
+        stream.end(fileBuffer);
+      });
+    };
 
+    // Upload salary slip to Cloudinary if present
+    let salarySlipUrl = null;
     if (req.files && req.files.salarySlip) {
-      salarySlipFilename = req.files.salarySlip[0].filename; 
+      salarySlipUrl = await uploadToCloudinary(req.files.salarySlip[0].buffer, 'salary_slips');
     }
 
+    // Upload picture to Cloudinary if present
+    let pictureUrl = null;
     if (req.files && req.files.picture) {
-      // Get the filename from the Multer file object
-      pictureFilename = req.files.picture[0].filename; // Only the filename (e.g., 1626795632328-photo.jpg)
+      pictureUrl = await uploadToCloudinary(req.files.picture[0].buffer, 'pictures');
     }
 
-    // Create new record instance
+    // Create new record instance with URLs
     const newRecord = new Record({
       name,
       fatherName,
@@ -52,8 +64,8 @@ exports.addRecord = async (req, res) => {
       dateOfBirth,
       dateOfJoining,
       reference,
-      salarySlip: salarySlipFilename,
-      picture: pictureFilename,
+      salarySlip: salarySlipUrl,
+      picture: pictureUrl,
     });
 
     await newRecord.save();
@@ -64,6 +76,7 @@ exports.addRecord = async (req, res) => {
     res.status(500).json({ error: 'Failed to add record', details: error.message });
   }
 };
+
 
 exports.getAllRecords = async (req, res) => {
     try {
@@ -92,12 +105,41 @@ exports.deleteRecord = async (req, res) => {
   }
 };
 
+const uploadToCloudinary = (fileBuffer, folder) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result.secure_url);
+      }
+    );
+    stream.end(fileBuffer);
+  });
+};
 exports.editRecord = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
+    let updatedFields = { ...updates };
 
-    const updatedRecord = await Record.findByIdAndUpdate(id, updates, { new: true });
+    
+
+    if (req.files && req.files.salarySlip && req.files.salarySlip[0]) {
+      const salarySlipUrl = await uploadToCloudinary(req.files.salarySlip[0].buffer, 'salary_slips');
+      updatedFields.salarySlip = salarySlipUrl;
+      console.log('Salary slip uploaded to:', salarySlipUrl);
+    }
+
+    if (req.files && req.files.picture && req.files.picture[0]) {
+      const pictureUrl = await uploadToCloudinary(req.files.picture[0].buffer, 'pictures');
+      updatedFields.picture = pictureUrl;
+      console.log('Picture uploaded to:', pictureUrl);
+    }
+
+
+    // Find and update the record
+    const updatedRecord = await Record.findByIdAndUpdate(id, updatedFields, { new: true });
 
     if (!updatedRecord) {
       return res.status(404).json({ error: 'Record not found' });
@@ -109,3 +151,4 @@ exports.editRecord = async (req, res) => {
     res.status(500).json({ error: 'Failed to update record' });
   }
 };
+
