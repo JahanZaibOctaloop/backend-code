@@ -17,6 +17,7 @@ exports.addRecord = async (req, res) => {
       weaponTrainingRecord,
       experience,
       dateOfBirth,
+      salarySlip,
       dateOfJoining,
       reference,
     } = req.body;
@@ -35,12 +36,7 @@ exports.addRecord = async (req, res) => {
       });
     };
 
-    // Upload salary slip to Cloudinary if present
-    let salarySlipUrl = null;
-    if (req.files && req.files.salarySlip) {
-      salarySlipUrl = await uploadToCloudinary(req.files.salarySlip[0].buffer, 'salary_slips');
-    }
-
+   
     // Upload picture to Cloudinary if present
     let pictureUrl = null;
     if (req.files && req.files.picture) {
@@ -64,7 +60,7 @@ exports.addRecord = async (req, res) => {
       dateOfBirth,
       dateOfJoining,
       reference,
-      salarySlip: salarySlipUrl,
+      salarySlip,
       picture: pictureUrl,
     });
 
@@ -117,19 +113,13 @@ const uploadToCloudinary = (fileBuffer, folder) => {
     stream.end(fileBuffer);
   });
 };
+
+
 exports.editRecord = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
     let updatedFields = { ...updates };
-
-    
-
-    if (req.files && req.files.salarySlip && req.files.salarySlip[0]) {
-      const salarySlipUrl = await uploadToCloudinary(req.files.salarySlip[0].buffer, 'salary_slips');
-      updatedFields.salarySlip = salarySlipUrl;
-      console.log('Salary slip uploaded to:', salarySlipUrl);
-    }
 
     if (req.files && req.files.picture && req.files.picture[0]) {
       const pictureUrl = await uploadToCloudinary(req.files.picture[0].buffer, 'pictures');
@@ -138,9 +128,7 @@ exports.editRecord = async (req, res) => {
     }
 
 
-    // Find and update the record
     const updatedRecord = await Record.findByIdAndUpdate(id, updatedFields, { new: true });
-
     if (!updatedRecord) {
       return res.status(404).json({ error: 'Record not found' });
     }

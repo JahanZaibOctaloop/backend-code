@@ -11,6 +11,8 @@ const port = process.env.PORT || 3000;
 const UserRoute = require('./routes/userRoute');
 const AdminRoute = require('./routes/recordRoute');
 const dashboardRoutes = require('./routes/dashboardRoute');
+const attendanceRoute = require('./routes/attendanceRoute');
+
 
 
 
@@ -31,6 +33,8 @@ app.use('/', UserRoute);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api', AdminRoute);
 app.use('/api', dashboardRoutes);
+app.use('/api', attendanceRoute);
+
 
 
 // app.use('/admin-route', AdminRoute);
